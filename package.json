@@ -2,7 +2,7 @@
   "name": "jszip",
   "version": "3.10.1",
   "author": "Stuart Knightley <stuart@stuartk.com>",
-  "description": "Create, read and edit .zip files with JavaScript - Security Enhanced Fork with 0 vulnerabilities",
+  "description": "Create, read and edit .zip files with JavaScript http://stuartk.com/jszip",
   "scripts": {
     "test": "npm run test-node && npm run test-browser && tsc",
     "test-node": "qunit --require ./test/helpers/test-utils.js --require ./test/helpers/node-test-utils.js test/asserts/",
@@ -42,11 +42,7 @@
     "zip",
     "deflate",
     "inflate",
-    "security",
-    "secure",
-    "vulnerability-free",
-    "path-traversal-protection",
-    "zip-bomb-protection"
+    "security"
   ],
   "devDependencies": {
     "benchmark": "^2.1.4",
