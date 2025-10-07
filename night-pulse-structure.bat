@@ -1,7 +1,26 @@
 @echo off
 setlocal enabledelayedexpansion
+rem -----------------------------------------------------------------
+rem Night Pulse bootstrap script
+rem Usage: double-click or run `night-pulse-structure.bat [target-dir]`
+rem        The optional target directory overrides the default path.
+rem -----------------------------------------------------------------
 
-set "BASE_PATH=C:\night-pulse-mtl"
+set "DEFAULT_BASE=C:\night-pulse-mtl"
+
+if "%~1"=="" (
+    set "BASE_PATH=%DEFAULT_BASE%"
+) else (
+    set "BASE_PATH=%~1"
+)
+
+if "%BASE_PATH%"=="" (
+    echo [error] The destination path could not be determined.
+    echo         Provide a folder path as the first argument or edit DEFAULT_BASE.
+    goto :eof
+)
+
+if "%BASE_PATH:~-1%"=="\" set "BASE_PATH=%BASE_PATH:~0,-1%"
 
 call :header "Creating Night Pulse structure at %BASE_PATH%"
 call :ensure_dir "%BASE_PATH%"
