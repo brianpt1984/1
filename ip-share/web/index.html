@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e1e2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="IP Share" />
+  <title>IP Share</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #1e1e2e;
+      --surface: #313244;
+      --blue:    #89b4fa;
+      --green:   #a6e3a1;
+      --red:     #f38ba8;
+      --muted:   #6c7086;
+      --text:    #cdd6f4;
+      --cyan:    #89dceb;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 24px;
+    }
+
+    h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    #ip-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 28px 36px;
+      text-align: center;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+
+    #ip-value {
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
+      font-weight: 700;
+      color: var(--blue);
+      word-break: break-all;
+      margin: 12px 0 6px;
+      min-height: 2.6em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #port-value {
+      font-size: .85rem;
+      color: var(--muted);
+    }
+
+    #status {
+      font-size: .8rem;
+      margin-top: 16px;
+      height: 1.2em;
+    }
+    .ok   { color: var(--green); }
+    .err  { color: var(--red); }
+    .wait { color: var(--muted); }
+
+    button {
+      background: var(--surface);
+      color: var(--text);
+      border: 1.5px solid var(--muted);
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { background: #45475a; border-color: var(--blue); }
+
+    #copy-btn { border-color: var(--cyan); color: var(--cyan); }
+    #copy-btn.copied { background: var(--green); color: var(--bg);
+                       border-color: var(--green); }
+
+    .row { display: flex; gap: 12px; }
+
+    #last-updated {
+      font-size: .75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* pulse animation while refreshing */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .pulsing { animation: pulse 1s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <h1>IP Share</h1>
+
+  <div id="ip-card">
+    <div style="font-size:.75rem;color:var(--muted);letter-spacing:.06em">WINDOWS MACHINE IP</div>
+    <div id="ip-value" class="pulsing">…</div>
+    <div id="port-value"></div>
+    <div id="status" class="wait">Connecting…</div>
+  </div>
+
+  <div class="row">
+    <button id="copy-btn" onclick="copyIP()">Copy IP</button>
+    <button onclick="refresh()">Refresh</button>
+  </div>
+
+  <div id="last-updated"></div>
+
+  <script>
+    let currentIP = "";
+    let autoTimer;
+
+    async function fetchIP() {
+      const ipEl   = document.getElementById("ip-value");
+      const status = document.getElementById("status");
+      const portEl = document.getElementById("port-value");
+      ipEl.classList.add("pulsing");
+      try {
+        const res  = await fetch("/api/ip", { cache: "no-store" });
+        const data = await res.json();
+        currentIP = data.ip;
+        ipEl.textContent = data.ip;
+        portEl.textContent = `port ${data.port}`;
+        status.textContent = "Connected";
+        status.className = "ok";
+        document.getElementById("last-updated").textContent =
+          "Last updated " + new Date().toLocaleTimeString();
+      } catch (e) {
+        status.textContent = "Cannot reach server";
+        status.className = "err";
+      } finally {
+        ipEl.classList.remove("pulsing");
+      }
+    }
+
+    function refresh() { fetchIP(); }
+
+    function copyIP() {
+      if (!currentIP) return;
+      navigator.clipboard.writeText(currentIP).then(() => {
+        const btn = document.getElementById("copy-btn");
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "Copy IP";
+          btn.classList.remove("copied");
+        }, 1800);
+      });
+    }
+
+    // Auto-refresh every 15 seconds
+    function startAutoRefresh() {
+      autoTimer = setInterval(fetchIP, 15_000);
+    }
+
+    // Refresh when tab becomes visible again
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) fetchIP();
+    });
+
+    fetchIP();
+    startAutoRefresh();
+  </script>
+</body>
+</html>
