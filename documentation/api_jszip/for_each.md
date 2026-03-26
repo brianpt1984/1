@@ -16,12 +16,12 @@ name      | type     | description
 ----------|----------|------------
 callback  | function | the callback to use.
 
-The callback has the following signature : `function (relativePath, file) {...}` :
+The callback has the following signature : `function (file, relativePath) {...}` :
 
 name         | type      | description
 -------------|-----------|------------
-relativePath | string    | the filename and its path, relative to the current folder.
 file         | ZipObject | the current file. See [ZipObject]({{site.baseurl}}/documentation/api_zipobject.html).
+relativePath | string    | the filename and its path, relative to the current folder.
 
 
 ## Examples
@@ -34,7 +34,7 @@ zip.file("test/index.html", "...");
 zip.file("test/asserts/file.js", "...");
 zip.file("test/asserts/generate.js", "...");
 
-zip.folder("test").forEach(function (relativePath, file){
+zip.folder("test").forEach(function (file, relativePath){
     console.log("iterating over", relativePath);
 });
 
