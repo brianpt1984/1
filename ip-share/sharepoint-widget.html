@@ -1,0 +1,287 @@
+<!-- IP Share – SharePoint Modern Script Editor Web Part snippet
+     SETUP: Set SP_WIDGET_SERVER below to your Windows machine URL,
+     e.g. "http://192.168.1.50:8765". Both devices must be on the
+     same network, or the server must be reachable from the browser.
+     Non-owner safe: no admin or tenant features required. -->
+<div id="sp-widget">
+  <style>
+    #sp-widget {
+      --sp-widget-bg: #1e1e2e;
+      --sp-widget-surface: #313244;
+      --sp-widget-blue: #89b4fa;
+      --sp-widget-green: #a6e3a1;
+      --sp-widget-red: #f38ba8;
+      --sp-widget-muted: #6c7086;
+      --sp-widget-text: #cdd6f4;
+      --sp-widget-cyan: #89dceb;
+      box-sizing: border-box;
+      background: var(--sp-widget-bg);
+      color: var(--sp-widget-text);
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 24px;
+      border-radius: 8px;
+    }
+
+    #sp-widget *,
+    #sp-widget *::before,
+    #sp-widget *::after {
+      box-sizing: border-box;
+    }
+
+    #sp-widget .sp-widget-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--sp-widget-muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    #sp-widget-ip-card {
+      background: var(--sp-widget-surface);
+      border-radius: 20px;
+      padding: 28px 36px;
+      text-align: center;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
+    }
+
+    #sp-widget-ip-card-label {
+      font-size: .75rem;
+      color: var(--sp-widget-muted);
+      letter-spacing: .06em;
+      margin: 0;
+    }
+
+    #sp-widget-ip-value {
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
+      font-weight: 700;
+      color: var(--sp-widget-blue);
+      word-break: break-all;
+      margin: 12px 0 6px;
+      min-height: 2.6em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #sp-widget-port-value {
+      font-size: .85rem;
+      color: var(--sp-widget-muted);
+      margin: 0;
+    }
+
+    #sp-widget-status {
+      font-size: .8rem;
+      margin-top: 16px;
+      height: 1.2em;
+    }
+
+    #sp-widget .sp-widget-ok   { color: var(--sp-widget-green); }
+    #sp-widget .sp-widget-err  { color: var(--sp-widget-red); }
+    #sp-widget .sp-widget-wait { color: var(--sp-widget-muted); }
+
+    #sp-widget .sp-widget-btn {
+      background: var(--sp-widget-surface);
+      color: var(--sp-widget-text);
+      border: 1.5px solid var(--sp-widget-muted);
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+      -webkit-tap-highlight-color: transparent;
+      line-height: 1.2;
+    }
+
+    #sp-widget .sp-widget-btn:hover {
+      background: #45475a;
+    }
+
+    #sp-widget .sp-widget-btn:active {
+      background: #45475a;
+      border-color: var(--sp-widget-blue);
+    }
+
+    #sp-widget-copy-btn {
+      border-color: var(--sp-widget-cyan) !important;
+      color: var(--sp-widget-cyan);
+    }
+
+    #sp-widget-copy-btn.sp-widget-copied {
+      background: var(--sp-widget-green) !important;
+      color: var(--sp-widget-bg);
+      border-color: var(--sp-widget-green) !important;
+    }
+
+    #sp-widget .sp-widget-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    #sp-widget-last-updated {
+      font-size: .75rem;
+      color: var(--sp-widget-muted);
+      text-align: center;
+      margin: 0;
+    }
+
+    @keyframes sp-widget-pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: .4; }
+    }
+
+    #sp-widget .sp-widget-pulsing {
+      animation: sp-widget-pulse 1s ease-in-out infinite;
+    }
+
+    /* Override any inherited SharePoint margins/padding on common elements */
+    #sp-widget h2,
+    #sp-widget div,
+    #sp-widget span,
+    #sp-widget button {
+      margin-block-start: 0;
+      margin-block-end: 0;
+    }
+  </style>
+
+  <h2 class="sp-widget-title" aria-label="IP Share widget">IP Share</h2>
+
+  <div id="sp-widget-ip-card" role="region" aria-label="IP address display">
+    <div id="sp-widget-ip-card-label">WINDOWS MACHINE IP</div>
+    <div id="sp-widget-ip-value" class="sp-widget-pulsing"
+         role="status" aria-live="polite" aria-label="IP address">&#x2026;</div>
+    <div id="sp-widget-port-value"></div>
+    <div id="sp-widget-status" class="sp-widget-wait"
+         role="status" aria-live="polite">Connecting&#x2026;</div>
+  </div>
+
+  <div class="sp-widget-row">
+    <button id="sp-widget-copy-btn" class="sp-widget-btn"
+            aria-label="Copy IP address to clipboard">Copy IP</button>
+    <button id="sp-widget-refresh-btn" class="sp-widget-btn"
+            aria-label="Refresh IP address">Refresh</button>
+  </div>
+
+  <div id="sp-widget-last-updated" aria-live="polite"></div>
+
+  <script>
+    /* === CONFIGURATION ===================================================
+       Set this to your Windows machine's base URL, including port.
+       Example: "http://192.168.1.50:8765"
+       Leave empty ONLY if the SharePoint page can reach /api/ip on
+       the same origin (unlikely for SharePoint Online).
+       =================================================================== */
+    var SP_WIDGET_SERVER = "";
+
+    /* Scoped inside a block to avoid global variable leaks */
+    {
+      let root       = document.getElementById("sp-widget");
+      let ipEl       = document.getElementById("sp-widget-ip-value");
+      let statusEl   = document.getElementById("sp-widget-status");
+      let portEl     = document.getElementById("sp-widget-port-value");
+      let copyBtn    = document.getElementById("sp-widget-copy-btn");
+      let refreshBtn = document.getElementById("sp-widget-refresh-btn");
+      let updatedEl  = document.getElementById("sp-widget-last-updated");
+      let currentIP  = "";
+      let autoTimer  = null;
+
+      function setStatus(text, cls) {
+        statusEl.textContent = text;
+        statusEl.className   = cls;
+      }
+
+      function fetchIP() {
+        ipEl.classList.add("sp-widget-pulsing");
+
+        let endpoint = SP_WIDGET_SERVER
+          ? SP_WIDGET_SERVER.replace(/\/+$/, "") + "/api/ip"
+          : "/api/ip";
+
+        fetch(endpoint, { cache: "no-store" })
+          .then(function (res) {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          })
+          .then(function (data) {
+            currentIP = data.ip || "";
+            ipEl.textContent  = data.ip;
+            portEl.textContent = data.port ? "port " + data.port : "";
+            setStatus("Connected", "sp-widget-ok");
+            updatedEl.textContent =
+              "Last updated " + new Date().toLocaleTimeString();
+          })
+          .catch(function () {
+            /* <!-- /api/ip unreachable – set SP_WIDGET_SERVER to your machine URL --> */
+            setStatus("Cannot reach server", "sp-widget-err");
+          })
+          .then(function () {
+            ipEl.classList.remove("sp-widget-pulsing");
+          });
+      }
+
+      function showCopied() {
+        copyBtn.textContent = "Copied!";
+        copyBtn.classList.add("sp-widget-copied");
+        setTimeout(function () {
+          copyBtn.textContent = "Copy IP";
+          copyBtn.classList.remove("sp-widget-copied");
+        }, 1800);
+      }
+
+      function copyIP() {
+        if (!currentIP) return;
+
+        /* Primary: Clipboard API (works on HTTPS origins) */
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(currentIP)
+            .then(showCopied)
+            .catch(fallbackCopy);
+          return;
+        }
+        fallbackCopy();
+      }
+
+      /* Fallback for stricter CSP / non-HTTPS / iframe sandbox */
+      function fallbackCopy() {
+        try {
+          var ta  = document.createElement("textarea");
+          ta.value = currentIP;
+          ta.setAttribute("readonly", "");
+          ta.style.cssText = "position:fixed;opacity:0;left:-9999px";
+          root.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          root.removeChild(ta);
+          showCopied();
+        } catch (_) {
+          /* <!-- clipboard blocked by sandbox policy --> */
+          copyBtn.textContent = "Copy failed";
+          setTimeout(function () { copyBtn.textContent = "Copy IP"; }, 2000);
+        }
+      }
+
+      /* Event listeners (no inline onclick – safer in SP) */
+      copyBtn.addEventListener("click", copyIP);
+      refreshBtn.addEventListener("click", function () { fetchIP(); });
+
+      /* Auto-refresh every 15 seconds */
+      autoTimer = setInterval(fetchIP, 15000);
+
+      /* Re-fetch when the browser tab regains focus */
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) fetchIP();
+      });
+
+      /* Initial fetch – runs immediately since the HTML above is already parsed */
+      fetchIP();
+    }
+  </script>
+</div>
