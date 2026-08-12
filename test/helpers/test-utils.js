@@ -57,11 +57,21 @@
         var done = assert.async();
 
         options = options || {type:"binarystring"};
-        // TODO checkcrc32
+
+        var zipLoaded;
         return new JSZip().loadAsync(bytesStream).then(function (zip) {
+            zipLoaded = zip;
             return zip.generateAsync(options);
         }).then(function (content) {
             assert.ok(JSZipTestUtils.similar(bytesStream, content, 0), "generate stability : stable");
+            return new JSZip().loadAsync(content);
+        }).then(function (zipGenerated) {
+            zipLoaded.forEach(function (relativePath, file) {
+                if (!file.dir) {
+                    var fileGenerated = zipGenerated.files[relativePath];
+                    assert.strictEqual(fileGenerated._data.crc32, file._data.crc32, "crc32 stability : " + relativePath);
+                }
+            });
             done();
         })["catch"](JSZipTestUtils.assertNoError);
     };
