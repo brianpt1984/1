@@ -19,3 +19,16 @@ QUnit.test("Paths are resolved correctly", function (assert) {
     assert.strictEqual(utils.resolve("../../../../../a"), "a");
     assert.strictEqual(utils.resolve("../app.js"), "app.js");
 });
+
+QUnit.test("getTypeOf handles edge cases correctly", function (assert) {
+    assert.strictEqual(utils.getTypeOf("test"), "string");
+    assert.strictEqual(utils.getTypeOf([]), "array");
+
+    // Edge cases
+    assert.strictEqual(utils.getTypeOf({}), undefined);
+    assert.strictEqual(utils.getTypeOf(null), undefined);
+    assert.strictEqual(utils.getTypeOf(undefined), undefined);
+    assert.strictEqual(utils.getTypeOf(123), undefined);
+    assert.strictEqual(utils.getTypeOf(function(){}), undefined);
+    assert.strictEqual(utils.getTypeOf(true), undefined);
+});
