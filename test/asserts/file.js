@@ -343,7 +343,7 @@ QUnit.module("file", function () {
 
         zip.file("test.txt")
             .async("string")
-        // XXX zip.file(name, data) returns a ZipObject for chaining,
+        // zip.file(name, data) returns a ZipObject for chaining,
         // we need to try to get the value to get the error
             .then(function () {
                 assert.ok(false, "An unsupported object was added, but no exception thrown");
