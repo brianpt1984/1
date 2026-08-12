@@ -17,7 +17,7 @@ QUnit.test("accumulate catches errors from transformZipOutput", function(assert)
     helper.accumulate().then(function() {
         assert.ok(false, "Should have rejected");
         done();
-    })['catch'](function(err) {
+    })["catch"](function(err) {
         assert.ok(err.message.indexOf("unsupported_type") !== -1 || err.message.indexOf("not supported") !== -1, "Got expected error");
         done();
     });
