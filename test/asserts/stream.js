@@ -47,6 +47,28 @@ QUnit.module("stream", function () {
         helper.resume();
     });
 
+    QUnit.test("Worker error is caught and emitted", function (assert) {
+        if (typeof require !== "undefined") {
+            var GenericWorker = require("../../lib/stream/GenericWorker");
+            var worker = new GenericWorker("test");
+
+            var errorEmitted = false;
+            worker.on("error", function (e) {
+                errorEmitted = true;
+                assert.equal(e.message, "Forced error", "Error should be caught and emitted");
+            });
+
+            worker.on("end", function () {
+                throw new Error("Forced error");
+            });
+
+            worker.end();
+            assert.ok(errorEmitted, "The error was emitted");
+        } else {
+            assert.ok(true, "Skipped in browser if require is not available");
+        }
+    });
+
     QUnit.module("nodejs");
     if (JSZip.support.nodestream) {
         var fs = require("fs");
