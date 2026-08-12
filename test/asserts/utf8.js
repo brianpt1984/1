@@ -2,7 +2,6 @@
 
 var utf8 = require("../../lib/utf8");
 var support = require("../../lib/support");
-var nodejsUtils = require("../../lib/nodejsUtils");
 
 QUnit.module("utf8");
 
