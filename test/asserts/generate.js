@@ -363,3 +363,32 @@ JSZipTestUtils.testZipFile("generate with promises as files", "ref/all.zip", fun
             done();
         })["catch"](JSZipTestUtils.assertNoError);
 });
+
+QUnit.test("ZipFileWorker error catches exceptions from sources", function (assert) {
+    var ZipFileWorker = require("../../lib/generate/ZipFileWorker");
+    var utf8 = require("../../lib/utf8");
+    var encodeFileName = utf8.utf8encode;
+    var worker = new ZipFileWorker(false, null, "UNIX", encodeFileName);
+
+    // We can avoid resuming the worker by setting isPaused = false directly
+    // which bypasses calling .resume() and triggering an early flush/end logic
+    worker.isPaused = false;
+
+    var errorThrown = false;
+    // Mock a source that throws an exception when error is called
+    var mockSource = {
+        error: function () {
+            errorThrown = true;
+            throw new Error("Exploded in error()!");
+        }
+    };
+
+    worker._sources = [mockSource];
+
+    // Call error on the worker
+    var result = worker.error(new Error("Initial error"));
+
+    // The exception should be caught, and errorThrown should be true
+    assert.ok(errorThrown, "The source's error method should have been called");
+    assert.equal(result, true, "ZipFileWorker.error should return true if it caught exceptions");
+});
