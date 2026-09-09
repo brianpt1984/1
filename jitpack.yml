@@ -1,0 +1,7 @@
+jdk:
+  - openjdk17
+before_install:
+  - sdk install gradle 8.7 || true
+  - sdk use gradle 8.7
+install:
+  - bash gamepilot-build/jitpack-build.sh
