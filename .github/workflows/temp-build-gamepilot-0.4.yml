@@ -1,7 +1,7 @@
 name: Temporary Build GamePilot 0.4 APK
 
 on:
-  push:
+  pull_request:
     branches:
       - main
   workflow_dispatch:
