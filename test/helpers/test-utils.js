@@ -181,8 +181,10 @@
 
     JSZipTestUtils.createZipAll = function createZipAll() {
         var zip = new JSZip();
-        zip.file("Hello.txt", "Hello World\n");
-        zip.folder("images").file("smile.gif", "R0lGODdhBQAFAIACAAAAAP/eACwAAAAABQAFAAACCIwPkWerClIBADs=", {base64: true});
+        zip.file("Hello.txt", "Hello World\n", {date: new Date(1234567891011)});
+        zip.folder("images");
+        zip.file("images", null, {dir:true, date: new Date(1234876591011)});
+        zip.file("images/smile.gif", "R0lGODdhBQAFAIACAAAAAP/eACwAAAAABQAFAAACCIwPkWerClIBADs=", {base64: true, date: new Date(1234123491011)});
         return zip;
     };
 

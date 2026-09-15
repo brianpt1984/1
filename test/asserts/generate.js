@@ -63,14 +63,7 @@ testGenerateFor([{
     });
     JSZipTestUtils.testZipFile("generate : type:base64. " + testName, file, function(assert) {
         testGenerate(assert, {
-            prepare : function () {
-                // fix date to get a predictable output
-                var zip = new JSZip();
-                zip.file("Hello.txt", "Hello World\n", {date: new Date(1234567891011)});
-                zip.file("images", null, {dir:true, date: new Date(1234876591011)});
-                zip.file("images/smile.gif", "R0lGODdhBQAFAIACAAAAAP/eACwAAAAABQAFAAACCIwPkWerClIBADs=", {base64: true, date: new Date(1234123491011)});
-                return zip;
-            },
+            prepare : JSZipTestUtils.createZipAll,
             skipReloadTest : true,
             options : {type:"base64",streamFiles:streamFiles},
             assertions : function (err, result) {
@@ -194,7 +187,7 @@ testGenerateFor([{
         testGenerate(assert, {
             prepare : function () {
                 var zip = new JSZip();
-                zip.file("Hello.txt", "This a looong file : we need to see the difference between the different compression methods.\n");
+                zip.file("Hello.txt", "This a looong file : we need to see the difference between the different compression methods.\n", {date: new Date(1234567891011)});
                 return zip;
             },
             options : {type:"binarystring", compression:"STORE",streamFiles:streamFiles},
@@ -221,7 +214,7 @@ testGenerateFor([{
         testGenerate(assert, {
             prepare : function () {
                 var zip = new JSZip();
-                zip.file("Hello.txt", "This a looong file : we need to see the difference between the different compression methods.\n");
+                zip.file("Hello.txt", "This a looong file : we need to see the difference between the different compression methods.\n", {date: new Date(1234567891011)});
                 return zip;
             },
             options : {type:"binarystring", compression:"DEFLATE",streamFiles:streamFiles},
@@ -235,7 +228,7 @@ testGenerateFor([{
 
 JSZipTestUtils.testZipFile("STORE is the default method", "ref/text.zip", function(assert, expected) {
     var zip = new JSZip();
-    zip.file("Hello.txt", "Hello World\n");
+    zip.file("Hello.txt", "Hello World\n", {date: new Date(1234567891011)});
     var done = assert.async();
     zip.generateAsync({type:"binarystring", compression:"STORE"}).then(function(content) {
         // no difference with the "Zip text file" test.
@@ -350,12 +343,14 @@ JSZipTestUtils.testZipFile("generate with promises as files", "ref/all.zip", fun
         setTimeout(function () {
             resolve("Hello World\n");
         }, 50);
-    }));
+    }), {date: new Date(1234567891011)});
+    zip.folder("images");
+    zip.file("images", null, {dir:true, date: new Date(1234876591011)});
     zip.folder("images").file("smile.gif", new JSZip.external.Promise(function (resolve) {
         setTimeout(function () {
             resolve("R0lGODdhBQAFAIACAAAAAP/eACwAAAAABQAFAAACCIwPkWerClIBADs=");
         }, 100);
-    }), {base64: true});
+    }), {base64: true, date: new Date(1234123491011)});
 
     zip.generateAsync({type:"string"})
         .then(function (result) {
