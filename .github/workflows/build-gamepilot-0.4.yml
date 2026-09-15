@@ -1,0 +1,54 @@
+name: Build GamePilot 0.4 APK
+
+on:
+  push:
+    branches:
+      - gamepilot-0.4-apk-build-temp
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Recreate source project
+        shell: bash
+        run: |
+          base64 -d gamepilot-build/GamePilot-0.4-input-patch.zip.b64 > /tmp/gamepilot.zip
+          mkdir -p /tmp/gamepilot-src
+          unzip -q /tmp/gamepilot.zip -d /tmp/gamepilot-src
+          test -f /tmp/gamepilot-src/GamePilot-0.4-input-patch/app/build.gradle
+
+      - name: Build debug APK
+        working-directory: /tmp/gamepilot-src/GamePilot-0.4-input-patch
+        run: gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          APK=/tmp/gamepilot-src/GamePilot-0.4-input-patch/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          ls -lh "$APK"
+          sha256sum "$APK"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GamePilot-0.4-debug-apk
+          path: /tmp/gamepilot-src/GamePilot-0.4-input-patch/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
