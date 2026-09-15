@@ -363,3 +363,23 @@ JSZipTestUtils.testZipFile("generate with promises as files", "ref/all.zip", fun
             done();
         })["catch"](JSZipTestUtils.assertNoError);
 });
+
+QUnit.test("generateInternalStream catches errors and returns an error stream", function (assert) {
+
+    var generate = require("../../lib/generate");
+    var originalWorker = generate.generateWorker;
+    generate.generateWorker = function() {
+        throw new Error("mocked error");
+    };
+
+    testGenerate(assert, {
+        prepare : JSZipTestUtils.createZipAll,
+        options : {type:"string"},
+        skipReloadTest: true,
+        assertions : function (err, result) {
+            generate.generateWorker = originalWorker;
+            assert.equal(result, null, "no data");
+            assert.ok(err.message.match("mocked error"), "the error message is useful");
+        }
+    });
+});
