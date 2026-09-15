@@ -11,19 +11,29 @@ unzip -q "$WORK/GamePilot-0.4-input-patch.zip" -d "$WORK/src"
 PROJECT="$WORK/src/GamePilot-0.4-input-patch"
 test -f "$PROJECT/app/build.gradle"
 
-# Ensure Android 35 is present when sdkmanager is available.
-SDKMGR="$(command -v sdkmanager || true)"
-if [ -z "$SDKMGR" ] && [ -n "${ANDROID_HOME:-}" ]; then
-  SDKMGR="$(find "$ANDROID_HOME" -type f -name sdkmanager 2>/dev/null | head -n 1 || true)"
-fi
-if [ -n "$SDKMGR" ]; then
-  yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
-  "$SDKMGR" "platforms;android-35" "build-tools;35.0.0" >/dev/null
-fi
+# JitPack's preinstalled sdkmanager is old and requires JAXB, which is absent
+# on Java 17. Install Google's current command-line tools into an isolated SDK.
+SDKROOT="$WORK/android-sdk"
+TOOLS_ZIP="$WORK/commandlinetools-linux.zip"
+TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
+TOOLS_SHA256="4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583"
+mkdir -p "$SDKROOT/cmdline-tools"
+curl -fL --retry 3 --retry-delay 2 "$TOOLS_URL" -o "$TOOLS_ZIP"
+echo "$TOOLS_SHA256  $TOOLS_ZIP" | sha256sum -c -
+unzip -q "$TOOLS_ZIP" -d "$WORK/cmdline-tools-unpacked"
+mv "$WORK/cmdline-tools-unpacked/cmdline-tools" "$SDKROOT/cmdline-tools/latest"
+export ANDROID_HOME="$SDKROOT"
+export ANDROID_SDK_ROOT="$SDKROOT"
+export PATH="$SDKROOT/cmdline-tools/latest/bin:$SDKROOT/platform-tools:$SDKROOT/build-tools/35.0.0:$PATH"
+SDKMGR="$SDKROOT/cmdline-tools/latest/bin/sdkmanager"
+
+yes | "$SDKMGR" --sdk_root="$SDKROOT" --licenses >/dev/null 2>&1 || true
+"$SDKMGR" --sdk_root="$SDKROOT" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
 echo "JAVA_HOME=${JAVA_HOME:-unset}"
 java -version
 gradle --version
+"$SDKMGR" --version
 
 cd "$PROJECT"
 gradle --no-daemon --stacktrace assembleDebug
