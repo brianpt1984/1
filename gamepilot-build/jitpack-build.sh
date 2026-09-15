@@ -11,8 +11,8 @@ unzip -q "$WORK/GamePilot-0.4-input-patch.zip" -d "$WORK/src"
 PROJECT="$WORK/src/GamePilot-0.4-input-patch"
 test -f "$PROJECT/app/build.gradle"
 
-# JitPack's preinstalled sdkmanager is old and requires JAXB, which is absent
-# on Java 17. Install Google's current command-line tools into an isolated SDK.
+# Use current Android command-line tools because JitPack's legacy sdkmanager
+# requires JAXB and fails under Java 17.
 SDKROOT="$WORK/android-sdk"
 TOOLS_ZIP="$WORK/commandlinetools-linux.zip"
 TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
@@ -47,12 +47,13 @@ GROUP_PATH="${GROUP_VALUE//./\/}"
 M2="$HOME/.m2/repository/$GROUP_PATH/$ARTIFACT_VALUE/$VERSION_VALUE"
 mkdir -p "$M2"
 
-# Publish the real APK extension plus a byte-identical .jar fallback so
-# JitPack will retain the artifact even on clients expecting JVM packaging.
+# APK files are ZIP/JAR-compatible containers. Publish a byte-identical JAR
+# through Maven so JitPack's artifact collector sees normal Maven metadata,
+# while also retaining the .apk extension for direct download.
 cp "$APK" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.apk"
 cp "$APK" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.jar"
 
-cat > "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.pom" <<EOF
+cat > "$ROOT/pom.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -66,6 +67,24 @@ cat > "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.pom" <<EOF
 </project>
 EOF
 
-sha256sum "$APK" | tee "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.sha256"
-ls -lh "$APK" "$M2"/*
+cp "$ROOT/pom.xml" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.pom"
+
+# Also publish through Maven's standard install mechanism when Maven is
+# available, which makes JitPack's post-build artifact discovery reliable.
+if command -v mvn >/dev/null 2>&1; then
+  mvn -q install:install-file \
+    -Dfile="$APK" \
+    -DgroupId="$GROUP_VALUE" \
+    -DartifactId="$ARTIFACT_VALUE" \
+    -Dversion="$VERSION_VALUE" \
+    -Dpackaging=jar \
+    -DpomFile="$ROOT/pom.xml"
+  cp "$APK" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.apk"
+fi
+
+mkdir -p "$ROOT/target"
+cp "$APK" "$ROOT/target/$ARTIFACT_VALUE-$VERSION_VALUE.apk"
+cp "$APK" "$ROOT/target/$ARTIFACT_VALUE-$VERSION_VALUE.jar"
+sha256sum "$APK" | tee "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.sha256" "$ROOT/target/GamePilot-0.4.sha256"
+ls -lh "$APK" "$M2"/* "$ROOT/target"/*
 echo "GAMEPILOT_APK_BUILT=$APK"
