@@ -6,13 +6,15 @@ WORK="$ROOT/.jitpack-gamepilot"
 rm -rf "$WORK"
 mkdir -p "$WORK"
 
-base64 -d "$ROOT/gamepilot-build/GamePilot-0.4-input-patch.zip.b64" > "$WORK/GamePilot-0.4-input-patch.zip"
-unzip -q "$WORK/GamePilot-0.4-input-patch.zip" -d "$WORK/src"
-PROJECT="$WORK/src/GamePilot-0.4-input-patch"
-test -f "$PROJECT/app/build.gradle"
+base64 -d "$ROOT/gamepilot-build/GamePilot-0.5-direct-lean.zip.b64" > "$WORK/GamePilot-0.5-direct-lean.zip"
+mkdir -p "$WORK/src"
+unzip -q "$WORK/GamePilot-0.5-direct-lean.zip" -d "$WORK/src"
+PROJECT="$WORK/src"
+test -f "$PROJECT/tools/build_native.py"
+test -f "$PROJECT/app/src/main/AndroidManifest.xml"
 
-# Use current Android command-line tools because JitPack's legacy sdkmanager
-# requires JAXB and fails under Java 17.
+# Use current Android command-line tools. This is the same remote SDK setup
+# previously used to build GamePilot 0.4.
 SDKROOT="$WORK/android-sdk"
 TOOLS_ZIP="$WORK/commandlinetools-linux.zip"
 TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
@@ -32,24 +34,24 @@ yes | "$SDKMGR" --sdk_root="$SDKROOT" --licenses >/dev/null 2>&1 || true
 
 echo "JAVA_HOME=${JAVA_HOME:-unset}"
 java -version
-gradle --version
 "$SDKMGR" --version
 
 cd "$PROJECT"
-gradle --no-daemon --stacktrace assembleDebug
-APK="$PROJECT/app/build/outputs/apk/debug/app-debug.apk"
+python3 tools/build_native.py
+APK="$PROJECT/app/build/native/GamePilot-0.5.apk"
 test -s "$APK"
+"$SDKROOT/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+"$SDKROOT/build-tools/35.0.0/aapt" dump badging "$APK" | head -n 8
 
-VERSION_VALUE="${VERSION:-${GIT_COMMIT:-0.4.0}}"
+VERSION_VALUE="${VERSION:-${GIT_COMMIT:-0.5.0}}"
 GROUP_VALUE="${GROUP:-com.github.brianpt1984}"
 ARTIFACT_VALUE="${ARTIFACT:-1}"
 GROUP_PATH="${GROUP_VALUE//./\/}"
 M2="$HOME/.m2/repository/$GROUP_PATH/$ARTIFACT_VALUE/$VERSION_VALUE"
 mkdir -p "$M2"
 
-# APK files are ZIP/JAR-compatible containers. Publish a byte-identical JAR
-# through Maven so JitPack's artifact collector sees normal Maven metadata,
-# while also retaining the .apk extension for direct download.
+# APK is ZIP/JAR-compatible, so publish byte-identical .jar and .apk copies
+# so JitPack's Maven artifact collector exposes the build output.
 cp "$APK" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.apk"
 cp "$APK" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.jar"
 
@@ -63,14 +65,11 @@ cat > "$ROOT/pom.xml" <<EOF
   <artifactId>$ARTIFACT_VALUE</artifactId>
   <version>$VERSION_VALUE</version>
   <packaging>jar</packaging>
-  <name>GamePilot 0.4 APK</name>
+  <name>GamePilot 0.5 APK</name>
 </project>
 EOF
-
 cp "$ROOT/pom.xml" "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.pom"
 
-# Also publish through Maven's standard install mechanism when Maven is
-# available, which makes JitPack's post-build artifact discovery reliable.
 if command -v mvn >/dev/null 2>&1; then
   mvn -q install:install-file \
     -Dfile="$APK" \
@@ -85,6 +84,6 @@ fi
 mkdir -p "$ROOT/target"
 cp "$APK" "$ROOT/target/$ARTIFACT_VALUE-$VERSION_VALUE.apk"
 cp "$APK" "$ROOT/target/$ARTIFACT_VALUE-$VERSION_VALUE.jar"
-sha256sum "$APK" | tee "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.sha256" "$ROOT/target/GamePilot-0.4.sha256"
+sha256sum "$APK" | tee "$M2/$ARTIFACT_VALUE-$VERSION_VALUE.sha256" "$ROOT/target/GamePilot-0.5.sha256"
 ls -lh "$APK" "$M2"/* "$ROOT/target"/*
 echo "GAMEPILOT_APK_BUILT=$APK"
