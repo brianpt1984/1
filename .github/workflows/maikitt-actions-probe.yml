@@ -1,0 +1,10 @@
+name: MaiKITT Public Actions Probe
+on:
+  push:
+    branches:
+      - maikitt-actions-probe-20261001
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ACTIONS_OK
