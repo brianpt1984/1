@@ -25,7 +25,7 @@ $("#file").on("change", function(evt) {
                     text:" (loaded in " + (dateAfter - dateBefore) + "ms)"
                 }));
 
-                zip.forEach(function (relativePath, zipEntry) {  // 2) print entries
+                zip.forEach(function (zipEntry, relativePath) {  // 2) print entries
                     $fileContent.append($("<li>", {
                         text : zipEntry.name
                     }));

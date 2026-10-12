@@ -7,7 +7,7 @@ QUnit.test("Filtering a zip", function(assert) {
     zip.file("1.txt", "1\n");
     zip.file("2.txt", "2\n");
     zip.file("3.log", "3\n");
-    var result = zip.filter(function(relativeFilename) {
+    var result = zip.filter(function(file, relativeFilename) {
         return relativeFilename.indexOf(".txt") !== -1;
     });
     assert.equal(result.length, 2, "filter has filtered");
@@ -25,7 +25,7 @@ QUnit.test("Filtering a zip from a relative path", function(assert) {
     zip.file("3.log", "3\n");
 
     var count = 0;
-    var result = zip.folder("foo").filter(function(relativeFilename) {
+    var result = zip.folder("foo").filter(function(file, relativeFilename) {
         count++;
         return relativeFilename.indexOf("3") !== -1;
     });
@@ -43,7 +43,7 @@ QUnit.test("Filtering a zip : the full path is still accessible", function(asser
     zip.file("2.txt", "2\n");
     zip.file("3.log", "3\n");
 
-    var result = zip.folder("foo").filter(function(relativeFilename, file) {
+    var result = zip.folder("foo").filter(function(file, relativeFilename) {
         return file.name.indexOf("3") !== -1;
     });
     assert.equal(result.length, 1, "the filter only match files/folders in the current folder");

@@ -9,7 +9,7 @@ QUnit.test("forEach works on /", function (assert) {
 
     assert.equal(zip.root, "");
 
-    zip.forEach(function (path, elt) {
+    zip.forEach(function (elt, path) {
         assert.equal(path, elt.name, "the full path is given on / for " + elt.name);
         count++;
         calls.push(path);
@@ -30,7 +30,7 @@ QUnit.test("forEach works on a sub folder", function (assert) {
     assert.ok(zip.file("subfolder/Hello.txt"));
     assert.equal(sub.root, "subfolder/");
 
-    sub.forEach(function (path, elt) {
+    sub.forEach(function (elt, path) {
         assert.equal(path, elt.name.substr("subfolder/".length), "the full path is given on subfolder/ for " + path);
         count++;
         calls.push(path);

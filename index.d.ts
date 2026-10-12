@@ -257,7 +257,7 @@ interface JSZip {
      *
      * @param callback function
      */
-    forEach(callback: (relativePath: string, file: JSZip.JSZipObject) => void): void;
+    forEach(callback: (file: JSZip.JSZipObject, relativePath: string) => void): void;
 
     /**
      * Get all files which match the given filter function
@@ -265,7 +265,7 @@ interface JSZip {
      * @param predicate Filter function
      * @return Array of matched elements
      */
-    filter(predicate: (relativePath: string, file: JSZip.JSZipObject) => boolean): JSZip.JSZipObject[];
+    filter(predicate: (file: JSZip.JSZipObject, relativePath: string) => boolean): JSZip.JSZipObject[];
 
     /**
      * Removes the file or folder from the archive
