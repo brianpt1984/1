@@ -14,6 +14,37 @@ JSZipTestUtils.testZipFile("Zip text file with UTF-8 characters", "ref/utf8.zip"
     })["catch"](JSZipTestUtils.assertNoError);
 });
 
+QUnit.test("JSZip correctly encodes filenames as UTF-8", function (assert) {
+    var done = assert.async();
+    var zip = new JSZip();
+    var filename = "€💩.txt";
+    zip.file(filename, "content");
+    zip.generateAsync({type: "uint8array"}).then(function (content) {
+        // We look for the filename in the ZIP content.
+        // It should be encoded as UTF-8.
+        // € -> E2 82 AC
+        // 💩 -> F0 9F 92 A9
+        var expectedBytes = [0xe2, 0x82, 0xac, 0xf0, 0x9f, 0x92, 0xa9];
+
+        var found = false;
+        for (var i = 0; i < content.length - expectedBytes.length; i++) {
+            var match = true;
+            for (var j = 0; j < expectedBytes.length; j++) {
+                if (content[i + j] !== expectedBytes[j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                found = true;
+                break;
+            }
+        }
+        assert.ok(found, "The UTF-8 encoded filename was found in the generated ZIP");
+        done();
+    })["catch"](JSZipTestUtils.assertNoError);
+});
+
 QUnit.test("Text file with long unicode string", function(assert) {
     var expected = "€";
     for(var i = 0; i < 13; i++) {
